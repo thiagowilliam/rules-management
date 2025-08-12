@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { IRulesDto } from '../dtos/Rules.dto';
 import RulesDetails from '../RulesDetails';
@@ -12,6 +12,30 @@ interface RulesListProps {
 const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
   const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
 
+  // Buscar dados das regras da integração atual
+  const allRules = selectedIntegration?.rules || [];
+  const totalRules = allRules.length || 0;
+
+  // Buscar a rule selecionada pelos dados completos
+  const selectedRule = useMemo(() => 
+    allRules.find(rule => rule.rule_id === selectedRuleId),
+    [allRules, selectedRuleId]
+  );
+
+  // Selecionar automaticamente a primeira rule quando mudar a integração ou quando não há nenhuma selecionada
+  useEffect(() => {
+    if (allRules.length > 0 && !selectedRuleId) {
+      setSelectedRuleId(allRules[0].rule_id);
+    }
+  }, [allRules, selectedRuleId]);
+
+  // Resetar seleção quando mudar de integração
+  useEffect(() => {
+    if (allRules.length > 0) {
+      setSelectedRuleId(allRules[0].rule_id);
+    }
+  }, [selectedIntegration?.id]);
+
   const handleRuleSelect = (ruleId: string): void => {
     setSelectedRuleId(ruleId);
   };
@@ -20,10 +44,6 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
   if (!selectedIntegration) {
     return null;
   }
-
-  // Buscar dados das regras da integração atual
-  const allRules = selectedIntegration.rules || [];
-  const totalRules = allRules.length || 0;
 
   // Separar regras entre premium e normais
   const premiumRules = allRules.filter(rule => rule.premium === true);
@@ -42,6 +62,10 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
               <RuleItem
                 key={rule.rule_id}
                 onClick={() => handleRuleSelect(rule.rule_id)}
+                style={{
+                  backgroundColor: selectedRuleId === rule.rule_id ? '#1890ff' : 'transparent',
+                  color: selectedRuleId === rule.rule_id ? 'white' : 'inherit'
+                }}
               >
                 <p>{rule.codename}</p>
               </RuleItem>
@@ -56,6 +80,10 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
               <RuleItem
                 key={rule.rule_id}
                 onClick={() => handleRuleSelect(rule.rule_id)}
+                style={{
+                  backgroundColor: selectedRuleId === rule.rule_id ? '#1890ff' : 'transparent',
+                  color: selectedRuleId === rule.rule_id ? 'white' : 'inherit'
+                }}
               >
                 <p>{rule.codename}</p>
               </RuleItem>
@@ -64,8 +92,8 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
         )}
       </RuleListContainer>
 
-      {selectedRuleId && (
-        <RulesDetails ruleId={selectedRuleId} />
+      {selectedRule && (
+        <RulesDetails selectedRule={selectedRule} />
       )}
     </RulesContainer>
   );
