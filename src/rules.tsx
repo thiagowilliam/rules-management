@@ -35,8 +35,13 @@ const Rules: React.FC = () => {
       label: 'Regras regulares',
       children: (
         <RulesList 
-          selectedIntegration={selectedIntegration} 
+          selectedIntegration={selectedIntegration}
           rules={normalRules}
+          premiumRules={premiumRules}
+          totalRules={totalRules}
+          selectedRuleId={selectedRuleId}
+          selectedRule={selectedRule}
+          onRuleSelect={handleRuleSelect}
         />
       ),
     },
@@ -45,7 +50,7 @@ const Rules: React.FC = () => {
       label: 'Customizadas',
       children: <div>Customizadas</div>,
     },
-  ], [selectedIntegration, normalRules]);
+  ], [selectedIntegration, normalRules, premiumRules, totalRules, selectedRuleId, selectedRule, handleRuleSelect]);
 
   // Memoiza os botões de integração para melhor performance
   const integrationButtons = useMemo(() => 
