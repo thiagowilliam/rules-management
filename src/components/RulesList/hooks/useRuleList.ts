@@ -10,6 +10,7 @@ interface UseRulesLogicProps {
 }
 
 interface UseRulesLogicReturn {
+  selectedIntegrationId: string | null;
   selectedRuleId: string | null;
   allRules: Rule[];
   totalRules: number;
@@ -86,6 +87,7 @@ export const useRulesLogic = ({
   }, []);
 
   return {
+    selectedIntegrationId,
     selectedRuleId,
     allRules,
     totalRules,

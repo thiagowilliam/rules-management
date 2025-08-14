@@ -17,6 +17,7 @@ const Rules: React.FC = () => {
   const { data: rulesResponse } = useRules();
   
   const {
+    selectedIntegrationId,
     selectedRuleId,
     allRules,
     totalRules,
@@ -59,12 +60,13 @@ const Rules: React.FC = () => {
         key={item.id}
         type="button"
         id="select-rule"
+        className={selectedIntegrationId === item.id ? 'selected' : ''}
         onClick={() => handleItemSelect(item.id)}
       >
         {item.name}
       </button>
     )) || [], 
-    [rulesResponse, handleItemSelect]
+    [rulesResponse, selectedIntegrationId, handleItemSelect]
   );
 
   return (
