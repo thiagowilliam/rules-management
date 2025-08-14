@@ -1,11 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Tabs, TabsProps } from 'antd';
-
-import { useRules } from '../../../services/Rules/useRules';
-
+import React, { useEffect, useMemo } from 'react';
+import { Tabs, TabsProps } from from 'antd';
 import Subheader from 'src/components/dls/Subheader';
 import RulesList from 'src/components/modules/Contextual/Rules/RulesList';
-
+import { i18n } from from 'src/i18n';
 import {
   Card,
   Container,
@@ -13,83 +10,76 @@ import {
   Title,
   ContainerIntegrations,
 } from './styles';
+import { useRules } from '../../../services/Rules/useRules';
+import { useRulesLogic } from '../hooks/useRulesLogic';
 
 const Rules: React.FC = () => {
-  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string | null>(null);
-
   const { data: rulesResponse } = useRules();
+  
+  const {
+    selectedRuleId,
+    allRules,
+    totalRules,
+    selectedRule,
+    premiumRules,
+    normalRules,
+    selectedIntegration,
+    handleRuleSelect,
+    handleItemSelect,
+  } = useRulesLogic({ rulesResponse });
 
-  // Buscar a integração selecionada pelo ID
-  const selectedIntegration = useMemo(() => 
-    rulesResponse?.find(integration => integration.id === selectedIntegrationId),
-    [rulesResponse, selectedIntegrationId]
-  );
-
-  // Selecionar automaticamente a primeira integração quando os dados chegarem
-  useEffect(() => {
-    if (rulesResponse && rulesResponse.length > 0) {
-      setSelectedIntegrationId(rulesResponse[0].id);
-    }
-  }, [rulesResponse]);
-
-  const handleItemSelect = (integrationId: string): void => {
-    setSelectedIntegrationId(integrationId);
-  };
-
-  // Separar as regras entre premium e normais da integração selecionada
-  const rules = useMemo(() => {
-    if (!selectedIntegration?.rules) {
-      return { premiumRules: [], normalRules: [] };
-    }
-
-    const allRules = selectedIntegration.rules;
-    return {
-      premiumRules: allRules.filter(rule => rule.premium === true),
-      normalRules: allRules.filter(rule => rule.premium === false)
-    };
-  }, [selectedIntegration]);
-
-  const items: TabsProps['items'] = [
+  // Memoiza os itens das abas para evitar recriações desnecessárias
+  const tabItems: TabsProps['items'] = useMemo(() => [
     {
       key: 'regularRules',
       label: 'Regras regulares',
-      children: <RulesList selectedIntegration={selectedIntegration} />,
+      children: (
+        <RulesList 
+          selectedIntegration={selectedIntegration} 
+          rules={normalRules}
+        />
+      ),
     },
     {
       key: 'customRules', 
       label: 'Customizadas',
-      children: <></>,
+      children: <div>Customizadas</div>,
     },
-  ];
+  ], [selectedIntegration, normalRules]);
+
+  // Memoiza os botões de integração para melhor performance
+  const integrationButtons = useMemo(() => 
+    rulesResponse?.map((item) => (
+      <button
+        key={item.id}
+        type="button"
+        id="select-rule"
+        onClick={() => handleItemSelect(item.id)}
+      >
+        {item.name}
+      </button>
+    )) || [], 
+    [rulesResponse, handleItemSelect]
+  );
 
   return (
     <Container>
-      <Subheader title={selectedIntegration?.name || ''} />
-
+      <Subheader title={i18n.t('shared.rules')} />
+      
       <ModulesContainer>
-        <Card title="Integrações">
-          <Title>Integrações</Title>
+        <Card title={i18n.t('shared.integrations')}>
+          <Title>{i18n.t('shared.integrations')}</Title>
           <ContainerIntegrations>
-            {rulesResponse?.map((item, index) => (
-              <button
-                key={item.id}
-                type="button"
-                id="select-rule"
-                onClick={() => handleItemSelect(item.id)}
-              >
-                {item.name}
-              </button>
-            ))}
+            {integrationButtons}
           </ContainerIntegrations>
         </Card>
 
-        <Card title="Regras">
-          <Title>Regras</Title>
-          <ContainerIntegrations>
-            {selectedIntegration && (
-              <Tabs defaultActiveKey="regularRules" items={items} />
-            )}
-          </ContainerIntegrations>
+        <Card>
+          <Title>{i18n.t('shared.ruleList')}</Title>
+          <Tabs 
+            defaultActiveKey="regularRules" 
+            items={tabItems}
+          />
         </Card>
       </ModulesContainer>
     </Container>
