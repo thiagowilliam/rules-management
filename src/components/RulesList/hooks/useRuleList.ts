@@ -10,7 +10,6 @@ interface UseRulesLogicProps {
 }
 
 interface UseRulesLogicReturn {
-  selectedIntegrationId: string | null;
   selectedRuleId: string | null;
   allRules: Rule[];
   totalRules: number;
@@ -31,17 +30,9 @@ export const useRulesLogic = ({
   // Auto-seleciona a primeira integração quando os dados carregam
   useEffect(() => {
     if (rulesResponse?.length && !selectedIntegrationId) {
-      setSelectedIntegrationId(rulesResponse[0].rule_id);
+      setSelectedIntegrationId(rulesResponse[0].id);
     }
   }, [rulesResponse, selectedIntegrationId]);
-
-  // Memoiza todas as regras para melhor performance
-  const allRules: Rule[] = useMemo(() => 
-    selectedIntegrationId?.rules || [],
-    [selectedIntegrationId]
-  );
-
-  const totalRules = allRules.length;
 
   // Memoiza a integração selecionada
   const selectedIntegration = useMemo(() => 
@@ -50,6 +41,14 @@ export const useRulesLogic = ({
     ),
     [rulesResponse, selectedIntegrationId]
   );
+
+  // Memoiza todas as regras para melhor performance
+  const allRules: Rule[] = useMemo(() => 
+    selectedIntegration?.rules || [],
+    [selectedIntegration]
+  );
+
+  const totalRules = allRules.length;
 
   // Memoiza a regra selecionada
   const selectedRule = useMemo(() => 
@@ -87,7 +86,6 @@ export const useRulesLogic = ({
   }, []);
 
   return {
-    selectedIntegrationId,
     selectedRuleId,
     allRules,
     totalRules,
