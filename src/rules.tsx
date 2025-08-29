@@ -24,6 +24,7 @@ const Rules: React.FC = () => {
     selectedRule,
     premiumRules,
     normalRules,
+    customRules,
     selectedIntegration,
     handleRuleSelect,
     handleItemSelect,
@@ -39,7 +40,8 @@ const Rules: React.FC = () => {
           selectedIntegration={selectedIntegration}
           rules={normalRules}
           premiumRules={premiumRules}
-          totalRules={totalRules}
+          customRules={[]} // Não exibe customizadas na aba regular
+          totalRules={normalRules.length + premiumRules.length}
           selectedRuleId={selectedRuleId}
           selectedRule={selectedRule}
           onRuleSelect={handleRuleSelect}
@@ -49,9 +51,20 @@ const Rules: React.FC = () => {
     {
       key: 'customRules', 
       label: 'Customizadas',
-      children: <div>Customizadas</div>,
+      children: (
+        <RulesList 
+          selectedIntegration={selectedIntegration}
+          rules={[]} // Não exibe regras normais na aba customizada
+          premiumRules={[]} // Não exibe premium na aba customizada
+          customRules={customRules}
+          totalRules={customRules.length}
+          selectedRuleId={selectedRuleId}
+          selectedRule={selectedRule}
+          onRuleSelect={handleRuleSelect}
+        />
+      ),
     },
-  ], [selectedIntegration, normalRules, premiumRules, totalRules, selectedRuleId, selectedRule, handleRuleSelect]);
+  ], [selectedIntegration, normalRules, premiumRules, customRules, selectedRuleId, selectedRule, handleRuleSelect]);
 
   // Memoiza os botões de integração para melhor performance
   const integrationButtons = useMemo(() => 

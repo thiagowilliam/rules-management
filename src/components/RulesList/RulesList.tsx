@@ -13,6 +13,7 @@ interface RulesListProps {
   selectedIntegration: IRulesDto | undefined;
   rules: Rule[];
   premiumRules: Rule[];
+  customRules: Rule[];
   totalRules: number;
   selectedRuleId: string | null;
   selectedRule: Rule | undefined;
@@ -22,7 +23,8 @@ interface RulesListProps {
 const RulesList: React.FC<RulesListProps> = ({ 
   selectedIntegration,
   rules,
-  premiumRules, 
+  premiumRules,
+  customRules,
   totalRules,
   selectedRuleId,
   selectedRule,
@@ -33,19 +35,32 @@ const RulesList: React.FC<RulesListProps> = ({
       <RuleListContainer>
         <TotalRulesNumber>{totalRules} Regras ativadas</TotalRulesNumber>
 
-        <RulesSection
-          title="Regras Premium"
-          rules={premiumRules}
-          selectedRuleId={selectedRuleId}
-          onRuleSelect={onRuleSelect}
-        />
+        {premiumRules.length > 0 && (
+          <RulesSection
+            title="Regras Premium"
+            rules={premiumRules}
+            selectedRuleId={selectedRuleId}
+            onRuleSelect={onRuleSelect}
+          />
+        )}
 
-        <RulesSection
-          title="Regras Padrão" 
-          rules={rules}
-          selectedRuleId={selectedRuleId}
-          onRuleSelect={onRuleSelect}
-        />
+        {rules.length > 0 && (
+          <RulesSection
+            title="Regras Padrão" 
+            rules={rules}
+            selectedRuleId={selectedRuleId}
+            onRuleSelect={onRuleSelect}
+          />
+        )}
+
+        {customRules.length > 0 && (
+          <RulesSection
+            title="Customizadas"
+            rules={customRules}
+            selectedRuleId={selectedRuleId}
+            onRuleSelect={onRuleSelect}
+          />
+        )}
       </RuleListContainer>
 
       {selectedRule && <RulesDetails selectedRule={selectedRule} />}

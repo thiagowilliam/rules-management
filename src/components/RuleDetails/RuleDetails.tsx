@@ -1,203 +1,103 @@
-import React from 'react';
-import { Card, Typography, Switch, Button, Spin, Alert, Collapse } from 'antd';
-import { EditOutlined, DownOutlined } from '@ant-design/icons';
-import styled from 'styled-components';
-import { useRule, useUpdateRule } from '../../hooks/useRules';
+// components/RulesDetails.tsx
+import React, { useState } from 'react';
+import RuleActions from './RuleActions';
+import { Rule } from '../types/Rules';
 
-const { Title, Text } = Typography;
-const { Panel } = Collapse;
-
-const Container = styled.div`
-  height: 100%;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: between;
-  align-items: flex-start;
-  margin-bottom: 24px;
-`;
-
-const RuleTitle = styled(Title)`
-  margin: 0 !important;
-  flex: 1;
-`;
-
-const Section = styled.div`
-  margin-bottom: 32px;
-`;
-
-const SectionTitle = styled(Title)`
-  margin-bottom: 16px !important;
-  font-size: 16px !important;
-`;
-
-const ActionItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-const ActionLabel = styled(Text)`
-  font-size: 14px;
-`;
-
-const ActionSwitch = styled(Switch)<{ $color: string }>`
-  .ant-switch-checked {
-    background-color: ${props => props.$color === 'red' ? '#f5222d' : '#52c41a'};
-  }
-`;
-
-const ParameterRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-`;
-
-const ParameterValue = styled(Text)`
-  font-weight: 600;
-`;
-
-const EmptyState = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: #8c8c8c;
-  text-align: center;
-`;
-
-interface RuleDetailsProps {
-  ruleId: string | null;
+interface RulesDetailsProps {
+  rule: Rule;
+  rulesManager: ReturnType<typeof import('../hooks/useRulesManager').useRulesManager>;
+  selectedIntegrationId: string;
 }
 
-export const RuleDetails: React.FC<RuleDetailsProps> = ({ ruleId }) => {
-  const { data: rule, isLoading, error } = useRule(ruleId);
-  const updateRuleMutation = useUpdateRule();
+const RulesDetails: React.FC<RulesDetailsProps> = ({ 
+  rule, 
+  rulesManager, 
+  selectedIntegrationId 
+}) => {
+  const [showModal, setShowModal] = useState(false);
+  const [parsedParams, setParsedParams] = useState<any>({});
 
-  const handleActionToggle = (actionIndex: number, enabled: boolean) => {
-    if (!rule) return;
+  // Tenta parsear os parâmetros customizados
+  React.useEffect(() => {
+    try {
+      const parsed = JSON.parse(rule.customParameters || '{}');
+      setParsedParams(parsed);
+    } catch (error) {
+      console.error('Erro ao parsear customParameters:', error);
+      setParsedParams({});
+    }
+  }, [rule.customParameters]);
 
-    const updatedActions = [...rule.actions];
-    updatedActions[actionIndex] = { ...updatedActions[actionIndex], enabled };
+  const shouldShowElement = 
+    Array.isArray(parsedParams) && parsedParams.length > 0;
 
-    updateRuleMutation.mutate({
-      id: rule.id,
-      updates: { actions: updatedActions }
-    });
+  const handleModal = (open: boolean) => {
+    setShowModal(open);
   };
 
-  if (!ruleId) {
-    return (
-      <Container>
-        <EmptyState>
-          <Text style={{ fontSize: '16px', marginBottom: '8px' }}>
-            Selecione uma regra
-          </Text>
-          <Text type="secondary">
-            Escolha uma regra na lista à esquerda para ver seus detalhes
-          </Text>
-        </EmptyState>
-      </Container>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Container>
-        <div style={{ textAlign: 'center', padding: '48px 0' }}>
-          <Spin size="large" />
-        </div>
-      </Container>
-    );
-  }
-
-  if (error || !rule) {
-    return (
-      <Container>
-        <Alert
-          message="Erro ao carregar regra"
-          description="Não foi possível carregar os detalhes da regra."
-          type="error"
-          showIcon
-        />
-      </Container>
-    );
-  }
-
   return (
-    <Container>
-      <Header>
-        <div style={{ flex: 1 }}>
-          <Text type="secondary" style={{ fontSize: '12px', textTransform: 'uppercase' }}>
-            REGRA {rule.id.split('REGRA')[1] || rule.id}
-          </Text>
-          <RuleTitle level={4}>{rule.name}</RuleTitle>
-        </div>
-        <Button icon={<EditOutlined />}>
-          Editar parâmetros
-        </Button>
-      </Header>
-
-      <Section>
-        <SectionTitle level={5}>Ações da regra:</SectionTitle>
-        <Card size="small">
-          {rule.actions.map((action, index) => (
-            <ActionItem key={index}>
-              <ActionLabel>{action.name}</ActionLabel>
-              <ActionSwitch
-                $color={action.color}
-                checked={action.enabled}
-                onChange={(enabled) => handleActionToggle(index, enabled)}
-                loading={updateRuleMutation.isPending}
+    <DetailsContainer>
+      <DetailsListContainer>
+        <DetailsHeader>
+          <RuleTitleWrapper>
+            <IconContainer>
+              <Icon
+                name="laptopMobile"
+                color={theme.colors.ExperianGrey900}
+                width={18}
+                height={14}
               />
-            </ActionItem>
-          ))}
-        </Card>
-      </Section>
+            </IconContainer>
+            <RuleTitle>
+              <Typography.Label size="md">
+                {i18n.t('shared.rule')} {rule.code}
+              </Typography.Label>
+              <p>{rule.name}</p>
+            </RuleTitle>
+          </RuleTitleWrapper>
 
-      <Section>
-        <SectionTitle level={5}>Parâmetros</SectionTitle>
-        <Card size="small">
-          {rule.parameters.map((parameter, index) => (
-            <ParameterRow key={index}>
-              <Text>{parameter.label}</Text>
-              <ParameterValue>
-                {parameter.value} {parameter.unit}
-              </ParameterValue>
-            </ParameterRow>
-          ))}
-        </Card>
-      </Section>
+          {shouldShowElement && (
+            <Button
+              outlined
+              icon={{
+                name: 'pen',
+                color: theme.colors.ExperianGrey800,
+                width: 17,
+              }}
+              textColor={theme.colors.ExperianGrey900}
+              id={i18n.t('shared.editParameters')}
+              onClick={() => handleModal(true)}
+            />
+          )}
+        </DetailsHeader>
 
-      <Section>
-        <SectionTitle level={5}>Informações</SectionTitle>
-        <Collapse 
-          expandIcon={({ isActive }) => <DownOutlined rotate={isActive ? 180 : 0} />}
-          size="small"
+        <Modal 
+          width={700} 
+          onCloseClick={() => setShowModal(false)}
+          show={showModal}
         >
-          <Panel header="O que a regra faz?" key="1">
-            <Text>{rule.information.whatItDoes}</Text>
-          </Panel>
-          <Panel header="O que acontece ao ser ativada?" key="2">
-            <Text>{rule.information.whenActivated}</Text>
-          </Panel>
-        </Collapse>
-      </Section>
+          <RuleModal
+            rule={rule}
+            parameters={parsedParams}
+            ruleIndex={rule.code}
+          />
+        </Modal>
+      </DetailsListContainer>
 
-      <div style={{ textAlign: 'center', marginTop: '32px' }}>
-        <Button type="primary" size="large">
-          Salvar alterações
-        </Button>
-      </div>
-    </Container>
+      <DetailsHeaderDivider />
+
+      {/* Passa o rulesManager e selectedIntegrationId para RuleActions */}
+      <RuleActions 
+        rule={rule} 
+        rulesManager={rulesManager}
+        selectedIntegrationId={selectedIntegrationId}
+      />
+
+      <DetailsListContainer>
+        <RuleInfos rule={rule} />
+      </DetailsListContainer>
+    </DetailsContainer>
   );
 };
+
+export default RulesDetails;

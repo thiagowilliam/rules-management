@@ -17,6 +17,7 @@ interface UseRulesLogicReturn {
   selectedRule: Rule | undefined;
   premiumRules: Rule[];
   normalRules: Rule[];
+  customRules: Rule[];
   selectedIntegration: IRulesDto | undefined;
   handleRuleSelect: (ruleId: string) => void;
   handleItemSelect: (integrationId: string) => void;
@@ -64,14 +65,16 @@ export const useRulesLogic = ({
     }
   }, [allRules, selectedRuleId]);
 
-  // Separa regras premium e normais com memoização
-  const { premiumRules, normalRules } = useMemo(() => {
+  // Separa regras premium, normais e customizadas com memoização
+  const { premiumRules, normalRules, customRules } = useMemo(() => {
     const premium = allRules.filter(rule => rule.premium === true);
-    const normal = allRules.filter(rule => rule.premium === false);
+    const normal = allRules.filter(rule => rule.premium === false && !rule.codename?.includes('CUSTOM'));
+    const custom = allRules.filter(rule => rule.codename?.includes('CUSTOM'));
     
     return { 
       premiumRules: premium, 
-      normalRules: normal 
+      normalRules: normal,
+      customRules: custom
     };
   }, [allRules]);
 
@@ -94,6 +97,7 @@ export const useRulesLogic = ({
     selectedRule,
     premiumRules,
     normalRules,
+    customRules,
     selectedIntegration,
     handleRuleSelect,
     handleItemSelect,
