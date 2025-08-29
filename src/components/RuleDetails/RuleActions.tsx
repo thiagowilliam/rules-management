@@ -15,7 +15,7 @@ const RuleActions: React.FC<RuleActionsProps> = ({
 }) => {
   const { updateRuleAction, getRule } = rulesManager;
 
-  // Obtém o estado atual da regra (com alterações locais se houver)
+  // Obtém o estado atual da regra (local, com alterações se houver)
   const currentRule = getRule(selectedIntegrationId, rule.ruleId) || rule;
 
   const handleEnabledSwitch = (checked: boolean) => {
@@ -52,14 +52,15 @@ const RuleActions: React.FC<RuleActionsProps> = ({
         <ActionItem>
           <p>
             {i18n.t('shared.enable')}
-            {/* Indica visualmente se a regra foi alterada */}
-            {currentRule.isChanged && (
+            {/* Opcionalmente, indica se foi alterado localmente */}
+            {currentRule.isChanged && currentRule.active !== rule.active && (
               <span style={{ 
                 marginLeft: '8px', 
                 color: '#ff9500', 
-                fontSize: '12px' 
+                fontSize: '12px',
+                fontWeight: 'bold'
               }}>
-                (alterado)
+                •
               </span>
             )}
           </p>
@@ -79,9 +80,10 @@ const RuleActions: React.FC<RuleActionsProps> = ({
             <span style={{ 
               marginLeft: '8px', 
               color: '#ff9500', 
-              fontSize: '12px' 
+              fontSize: '12px',
+              fontWeight: 'bold'
             }}>
-              (alterado)
+              •
             </span>
           )}
         </p>
@@ -100,9 +102,10 @@ const RuleActions: React.FC<RuleActionsProps> = ({
             <span style={{ 
               marginLeft: '8px', 
               color: '#ff9500', 
-              fontSize: '12px' 
+              fontSize: '12px',
+              fontWeight: 'bold'
             }}>
-              (alterado)
+              •
             </span>
           )}
         </p>
