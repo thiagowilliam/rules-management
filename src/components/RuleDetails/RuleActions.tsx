@@ -1,28 +1,35 @@
-// components/RuleActions.tsx
 import React from 'react';
-import { Rule } from '../types/Rules';
+import Typography from 'src/components/ui/Typography';
+import { i18n } from 'src/i18n';
+import {
+  ActionCard,
+  ActionCardDivider,
+  ActionItem,
+  ActionItemSwitch,
+} from './styles';
 
-interface RuleActionsProps {
-  rule: Rule;
-  rulesManager: ReturnType<typeof import('../hooks/useRulesManager').useRulesManager>;
-  selectedIntegrationId: string;
-}
-
-const RuleActions: React.FC<RuleActionsProps> = ({ 
-  rule, 
-  rulesManager, 
-  selectedIntegrationId 
+const RuleActions: React.FC<RuleActionsProps> = ({
+  rule,
+  rulesManager,
+  selectedIntegrationId,
 }) => {
   const { updateRuleAction, getRule } = rulesManager;
 
-  // Obtém o estado atual da regra (local, com alterações se houver)
   const currentRule = getRule(selectedIntegrationId, rule.ruleId) || rule;
+  const effectiveRule = currentRule || rule;
 
   const handleEnabledSwitch = (checked: boolean) => {
     updateRuleAction({
       rulesetId: selectedIntegrationId,
       ruleId: rule.ruleId,
-      updates: { active: checked }
+      updates: { 
+        active: checked,
+        // Se desabilitar o active, também desabilita os outros
+        ...(checked === false && {
+          markAsUnauthorized: false,
+          markAsFraud: false,
+        })
+      },
     });
   };
 
@@ -30,7 +37,11 @@ const RuleActions: React.FC<RuleActionsProps> = ({
     updateRuleAction({
       rulesetId: selectedIntegrationId,
       ruleId: rule.ruleId,
-      updates: { markAsUnauthorized: checked }
+      updates: { 
+        markAsUnauthorized: checked,
+        // Se marcar como unauthorized, desmarcar fraud
+        ...(checked && { markAsFraud: false })
+      },
     });
   };
 
@@ -38,35 +49,29 @@ const RuleActions: React.FC<RuleActionsProps> = ({
     updateRuleAction({
       rulesetId: selectedIntegrationId,
       ruleId: rule.ruleId,
-      updates: { markAsFraud: checked }
+      updates: { 
+        markAsFraud: checked,
+        // Se marcar como fraud, desmarcar unauthorized
+        ...(checked && { markAsUnauthorized: false })
+      },
     });
   };
+
+  // Condições para disabled state
+  const isActive = effectiveRule.active;
+  const isUnauthorizedOrFraudDisabled = !isActive;
 
   return (
     <>
       <Typography.Body size="md">
         {i18n.t('contextual.rules.ruleActions')}
       </Typography.Body>
-      
       <ActionCard>
         <ActionItem>
-          <p>
-            {i18n.t('shared.enable')}
-            {/* Opcionalmente, indica se foi alterado localmente */}
-            {currentRule.isChanged && currentRule.active !== rule.active && (
-              <span style={{ 
-                marginLeft: '8px', 
-                color: '#ff9500', 
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                •
-              </span>
-            )}
-          </p>
-          <ActionItemSwitch 
-            onChange={handleEnabledSwitch} 
-            checked={currentRule.active}
+          <p>{i18n.t('shared.enable')}</p>
+          <ActionItemSwitch
+            onChange={handleEnabledSwitch}
+            checked={effectiveRule.active}
           />
         </ActionItem>
       </ActionCard>
@@ -74,44 +79,20 @@ const RuleActions: React.FC<RuleActionsProps> = ({
       <ActionCardDivider />
 
       <ActionItem>
-        <p>
-          {i18n.t('contextual.ruleStatus.lowTrust')}
-          {currentRule.isChanged && currentRule.markAsUnauthorized !== rule.markAsUnauthorized && (
-            <span style={{ 
-              marginLeft: '8px', 
-              color: '#ff9500', 
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}>
-              •
-            </span>
-          )}
-        </p>
-        <ActionItemSwitch 
-          onChange={handleUnauthorizedSwitch} 
-          checked={currentRule.markAsUnauthorized}
+        <p>{i18n.t('contextual.ruleStatus.lowTrust')}</p>
+        <ActionItemSwitch
+          onChange={handleUnauthorizedSwitch}
+          checked={effectiveRule.markAsUnauthorized}
+          disabled={isUnauthorizedOrFraudDisabled}
         />
       </ActionItem>
 
-      <ActionCardDivider />
-
       <ActionItem>
-        <p>
-          {i18n.t('contextual.ruleStatus.suspiciousOrFraud')}
-          {currentRule.isChanged && currentRule.markAsFraud !== rule.markAsFraud && (
-            <span style={{ 
-              marginLeft: '8px', 
-              color: '#ff9500', 
-              fontSize: '12px',
-              fontWeight: 'bold'
-            }}>
-              •
-            </span>
-          )}
-        </p>
-        <ActionItemSwitch 
-          onChange={handleFraudSwitch} 
-          checked={currentRule.markAsFraud}
+        <p>{i18n.t('contextual.ruleStatus.suspiciousFraud')}</p>
+        <ActionItemSwitch
+          onChange={handleFraudSwitch}
+          checked={effectiveRule.markAsFraud}
+          disabled={isUnauthorizedOrFraudDisabled}
         />
       </ActionItem>
     </>
