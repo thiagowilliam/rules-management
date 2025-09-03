@@ -39,87 +39,90 @@ const RulesModal: React.FC<RulesModalProps> = ({
   // Refs para capturar os valores de cada RulesInput
   const inputRefs = useRef<Record<string, RulesInputRef>>({});
 
-  // RulesModal - Função handleSave corrigida
-const handleSave = () => {
-  try {
-    console.log('[RulesModal] Iniciando salvamento...');
-    
-    // Objeto para armazenar os parâmetros atualizados
-    const updatedParameters: Record<string, any> = {};
-    
-    // Debug: Verificar se temos parâmetros
-    console.log('[RulesModal] Parameters:', parameter);
-    console.log('[RulesModal] inputRefs.current:', inputRefs.current);
-    
-    // Percorrer todos os parâmetros e coletar seus valores
-    parameter.forEach((param, index) => {
-      const inputRef = inputRefs.current[param.name];
+  const handleSave = () => {
+    try {
+      console.log('[RulesModal] Iniciando salvamento...');
       
-      console.log(`[RulesModal] Param ${index}:`, param.name, 'Ref:', inputRef);
+      // Objeto para armazenar os parâmetros atualizados
+      const updatedParameters: Record<string, any> = {};
       
-      if (inputRef) {
-        const value = inputRef.getValue();
-        const paramName = inputRef.getParameterName();
+      // Debug: Verificar se temos parâmetros
+      console.log('[RulesModal] Parameters:', parameter);
+      console.log('[RulesModal] inputRefs.current:', inputRefs.current);
+      
+      // Percorrer todos os parâmetros e coletar seus valores
+      parameter.forEach((param, index) => {
+        const inputRef = inputRefs.current[param.name];
         
-        console.log(`[RulesModal] Valor coletado para ${paramName}:`, value);
+        console.log(`[RulesModal] Param ${index}:`, param.name, 'Ref:', inputRef);
         
-        updatedParameters[paramName] = value;
-      } else {
-        console.warn(`[RulesModal] Ref NÃO encontrado para ${param.name}`);
-        
-        // FALLBACK: Se ref não existe, tenta usar valor padrão do param
-        if (param.value !== undefined) {
-          updatedParameters[param.name] = param.value;
-          console.log(`[RulesModal] Usando valor padrão para ${param.name}:`, param.value);
+        if (inputRef) {
+          const value = inputRef.getValue();
+          const paramName = inputRef.getParameterName();
+          
+          console.log(`[RulesModal] Valor coletado para ${paramName}:`, value);
+          
+          updatedParameters[paramName] = value;
+        } else {
+          console.warn(`[RulesModal] Ref NÃO encontrado para ${param.name}`);
+          
+          // FALLBACK: Se ref não existe, tenta usar valor padrão do param
+          if (param.value !== undefined) {
+            updatedParameters[param.name] = param.value;
+            console.log(`[RulesModal] Usando valor padrão para ${param.name}:`, param.value);
+          }
         }
+      });
+      
+      console.log('[RulesModal] updatedParameters final:', updatedParameters);
+      
+      // Verificar se temos dados para salvar
+      const hasData = Object.keys(updatedParameters).length > 0;
+      
+      if (!hasData) {
+        console.warn('[RulesModal] Nenhum parâmetro coletado! Cancelando salvamento.');
+        // Opcional: Mostrar toast/alerta para o usuário
+        return;
       }
+      
+      // Converter para formato ARRAY (formato esperado pelos customParameters)
+const parametersArray = Object.entries(updatedParameters).map(([name, value]) => ({
+  name,
+  value: String(value) // Garantir que seja string
+}));
+
+// Se não há parâmetros, salvar array vazio (não objeto vazio)
+const customParametersJson = JSON.stringify(parametersArray.length > 0 ? parametersArray : []);
+console.log('[RulesModal] Array a ser salvo:', parametersArray);
+console.log('[RulesModal] JSON final:', customParametersJson);
+      
+      // Salvar usando o rulesManager
+      rulesManager.updateRuleParameters(rule.ruleId, customParametersJson);
+      
+      console.log('[RulesModal] Parâmetros salvos com sucesso!');
+      
+      // Fechar o modal
+      onCloseModal();
+    } catch (error) {
+      console.error('[RulesModal] Erro ao salvar parâmetros:', error);
+      // Opcional: Mostrar toast/alerta de erro para o usuário
+    }
+  };
+  
+  // Função para debug - adicionar temporariamente
+  const debugInputs = () => {
+    console.log('=== DEBUG INPUTS ===');
+    parameter.forEach(param => {
+      const ref = inputRefs.current[param.name];
+      console.log(`Param: ${param.name}`);
+      console.log(`Ref existe:`, !!ref);
+      if (ref) {
+        console.log(`getValue():`, ref.getValue?.());
+        console.log(`getParameterName():`, ref.getParameterName?.());
+      }
+      console.log('---');
     });
-    
-    console.log('[RulesModal] updatedParameters final:', updatedParameters);
-    
-    // Verificar se temos dados para salvar
-    const hasData = Object.keys(updatedParameters).length > 0;
-    
-    if (!hasData) {
-      console.warn('[RulesModal] Nenhum parâmetro coletado! Cancelando salvamento.');
-      // Opcional: Mostrar toast/alerta para o usuário
-      return;
-    }
-    
-    // Converter para JSON string (formato esperado pelos customParameters)
-    const customParametersJson = JSON.stringify(updatedParameters);
-    console.log('[RulesModal] JSON a ser salvo:', customParametersJson);
-    
-    // Salvar usando o rulesManager
-    rulesManager.updateRuleParameters(rule.ruleId, customParametersJson);
-    
-    console.log('[RulesModal] Parâmetros salvos com sucesso!');
-    
-    // Fechar o modal
-    onCloseModal();
-  } catch (error) {
-    console.error('[RulesModal] Erro ao salvar parâmetros:', error);
-    // Opcional: Mostrar toast/alerta de erro para o usuário
-  }
-};
-
-// Função para debug - adicionar temporariamente
-const debugInputs = () => {
-  console.log('=== DEBUG INPUTS ===');
-  parameter.forEach(param => {
-    const ref = inputRefs.current[param.name];
-    console.log(`Param: ${param.name}`);
-    console.log(`Ref existe:`, !!ref);
-    if (ref) {
-      console.log(`getValue():`, ref.getValue?.());
-      console.log(`getParameterName():`, ref.getParameterName?.());
-    }
-    console.log('---');
-  });
-};
-
-// Para usar o debug, adicione um botão temporário no JSX:
-// <button onClick={debugInputs}>Debug Inputs</button>
+  };
 
   const handleClose = () => {
     console.log('[RulesModal] Modal fechado sem salvar');
