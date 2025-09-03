@@ -54,14 +54,14 @@ export const useRulesLogic = ({
 
   // Memoiza a regra selecionada
   const selectedRule = useMemo(() => 
-    allRules.find((rule: Rule) => rule.rule_id === selectedRuleId),
+    allRules.find((rule: Rule) => rule.ruleId === selectedRuleId),
     [allRules, selectedRuleId]
   );
 
   // Auto-seleciona a primeira regra quando a integração muda
   useEffect(() => {
     if (allRules.length && !selectedRuleId) {
-      setSelectedRuleId(allRules[0].rule_id);
+      setSelectedRuleId(allRules[0].ruleId);
     }
   }, [allRules, selectedRuleId]);
 

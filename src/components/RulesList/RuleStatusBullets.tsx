@@ -7,7 +7,7 @@ interface RuleStatusBulletsProps {
 
 export const RuleStatusBullets: React.FC<RuleStatusBulletsProps> = ({ rule }) => {
   const getBulletConfig = () => {
-    if (rule.active && !rule.mark_as_fraud) {
+    if (rule.active && !rule.markAsFraud) {
       return {
         enabled: { show: true, text: 'Ativada' },
         confidence: { show: true, text: 'Baixa confiança' },
@@ -15,7 +15,7 @@ export const RuleStatusBullets: React.FC<RuleStatusBulletsProps> = ({ rule }) =>
       };
     }
     
-    if (rule.mark_as_unauthorized) {
+    if (rule.markAsUnauthorized) {
       return {
         enabled: { show: false, text: '' },
         confidence: { show: false, text: '' },

@@ -27,9 +27,9 @@ export const RulesSection: React.FC<RulesSectionProps> = ({
       <RulesContainer>
         {rules.map((rule: Rule) => (
           <RuleItem
-            key={rule.rule_id}
+            key={rule.ruleId}
             rule={rule}
-            isSelected={selectedRuleId === rule.rule_id}
+            isSelected={selectedRuleId === rule.ruleId}
             onClick={onRuleSelect}
           />
         ))}

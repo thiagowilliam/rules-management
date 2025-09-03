@@ -10,8 +10,8 @@ interface RuleItemProps {
 export const RuleItem: React.FC<RuleItemProps> = ({ rule, isSelected, onClick }) => {
   return (
     <RuleItem
-      key={rule.rule_id}
-      onClick={() => onClick(rule.rule_id)}
+      key={rule.ruleId}
+      onClick={() => onClick(rule.ruleId)}
     >
       <ContainerSVG>
         <SVG src={iconLaptopMobile} />

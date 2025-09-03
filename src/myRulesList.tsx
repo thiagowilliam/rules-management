@@ -18,21 +18,21 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
 
   // Buscar a rule selecionada pelos dados completos
   const selectedRule = useMemo(() => 
-    allRules.find(rule => rule.rule_id === selectedRuleId),
+    allRules.find(rule => rule.ruleId === selectedRuleId),
     [allRules, selectedRuleId]
   );
 
   // Selecionar automaticamente a primeira rule quando mudar a integração ou quando não há nenhuma selecionada
   useEffect(() => {
     if (allRules.length > 0 && !selectedRuleId) {
-      setSelectedRuleId(allRules[0].rule_id);
+      setSelectedRuleId(allRules[0].ruleId);
     }
   }, [allRules, selectedRuleId]);
 
   // Resetar seleção quando mudar de integração
   useEffect(() => {
     if (allRules.length > 0) {
-      setSelectedRuleId(allRules[0].rule_id);
+      setSelectedRuleId(allRules[0].ruleId);
     }
   }, [selectedIntegration?.id]);
 
@@ -60,11 +60,11 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
             <h2>Regras Premium</h2>
             {premiumRules.map(rule => (
               <RuleItem
-                key={rule.rule_id}
-                onClick={() => handleRuleSelect(rule.rule_id)}
+                key={rule.ruleId}
+                onClick={() => handleRuleSelect(rule.ruleId)}
                 style={{
-                  backgroundColor: selectedRuleId === rule.rule_id ? '#1890ff' : 'transparent',
-                  color: selectedRuleId === rule.rule_id ? 'white' : 'inherit'
+                  backgroundColor: selectedRuleId === rule.ruleId ? '#1890ff' : 'transparent',
+                  color: selectedRuleId === rule.ruleId ? 'white' : 'inherit'
                 }}
               >
                 <p>{rule.codename}</p>
@@ -78,11 +78,11 @@ const RulesList: React.FC<RulesListProps> = ({ selectedIntegration }) => {
             <h2>Regras Normais</h2>
             {normalRules.map(rule => (
               <RuleItem
-                key={rule.rule_id}
-                onClick={() => handleRuleSelect(rule.rule_id)}
+                key={rule.ruleId}
+                onClick={() => handleRuleSelect(rule.ruleId)}
                 style={{
-                  backgroundColor: selectedRuleId === rule.rule_id ? '#1890ff' : 'transparent',
-                  color: selectedRuleId === rule.rule_id ? 'white' : 'inherit'
+                  backgroundColor: selectedRuleId === rule.ruleId ? '#1890ff' : 'transparent',
+                  color: selectedRuleId === rule.ruleId ? 'white' : 'inherit'
                 }}
               >
                 <p>{rule.codename}</p>
