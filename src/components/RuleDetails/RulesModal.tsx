@@ -41,37 +41,56 @@ const RulesModal: React.FC<RulesModalProps> = ({
 
   const handleSave = () => {
     try {
+      console.log('[RulesModal] Iniciando handleSave...');
+      console.log('[RulesModal] Rule:', rule);
+      console.log('[RulesModal] Parameters:', parameter);
+      console.log('[RulesModal] InputRefs:', inputRefs.current);
+      
       // Objeto para armazenar os parâmetros atualizados
       const updatedParameters: Record<string, any> = {};
       
       // Percorrer todos os parâmetros e coletar seus valores
       parameter.forEach((param) => {
+        console.log(`[RulesModal] Processando parâmetro: ${param.name}`);
+        
         const inputRef = inputRefs.current[param.name];
+        
         if (inputRef) {
+          console.log(`[RulesModal] Ref encontrado para ${param.name}`);
+          
           const value = inputRef.getValue();
-          updatedParameters[param.name] = value;
+          const paramName = inputRef.getParameterName();
+          
+          console.log(`[RulesModal] Valor coletado para ${paramName}:`, value);
+          
+          updatedParameters[paramName] = value;
+        } else {
+          console.warn(`[RulesModal] Ref NÃO encontrado para ${param.name}`);
+          console.log('[RulesModal] Refs disponíveis:', Object.keys(inputRefs.current));
         }
       });
 
+      console.log('[RulesModal] Parâmetros coletados:', updatedParameters);
+
       // Converter para JSON string (formato esperado pelos customParameters)
       const customParametersJson = JSON.stringify(updatedParameters);
+      console.log('[RulesModal] JSON gerado:', customParametersJson);
 
       // Atualizar os parâmetros da regra localmente
+      console.log(`[RulesModal] Chamando updateRuleParameters para ruleId: ${rule.ruleId}`);
       rulesManager.updateRuleParameters(rule.ruleId, customParametersJson);
 
       // Fechar o modal
       onCloseModal();
       
-      console.log('Parâmetros atualizados:', {
-        ruleId: rule.ruleId,
-        parameters: updatedParameters,
-      });
+      console.log('[RulesModal] Salvamento concluído!');
     } catch (error) {
-      console.error('Erro ao salvar parâmetros:', error);
+      console.error('[RulesModal] Erro ao salvar parâmetros:', error);
     }
   };
 
   const handleClose = () => {
+    console.log('[RulesModal] Modal fechado sem salvar');
     onCloseModal();
   };
 
@@ -97,24 +116,32 @@ const RulesModal: React.FC<RulesModalProps> = ({
         </ParametersTitle>
 
         {/* Lista de parâmetros editáveis */}
-        {parameter.map((item, index) => (
-          <Card key={`${item.name}-${index}`}>
-            <InputWrapper>
-              <Counter>{index + 1}</Counter>
-              <RulesInput
-                ref={(el) => {
-                  if (el) {
-                    inputRefs.current[item.name] = el;
-                  }
-                }}
-                label={RulesList[item.name]?.label || item.name}
-                typeField={RulesList[item.name]?.fieldType}
-                placeholder={RulesList[item.name]?.placeholder}
-                data={item}
-              />
-            </InputWrapper>
-          </Card>
-        ))}
+        {parameter.map((item, index) => {
+          console.log(`[RulesModal] Renderizando input para: ${item.name}`, item);
+          
+          return (
+            <Card key={`${item.name}-${index}`}>
+              <InputWrapper>
+                <Counter>{index + 1}</Counter>
+                <RulesInput
+                  ref={(el) => {
+                    if (el) {
+                      console.log(`[RulesModal] Ref definido para: ${item.name}`);
+                      inputRefs.current[item.name] = el;
+                    } else {
+                      console.log(`[RulesModal] Ref REMOVIDO para: ${item.name}`);
+                      delete inputRefs.current[item.name];
+                    }
+                  }}
+                  label={RulesList[item.name]?.label || item.name}
+                  typeField={RulesList[item.name]?.fieldType}
+                  placeholder={RulesList[item.name]?.placeholder}
+                  data={item}
+                />
+              </InputWrapper>
+            </Card>
+          );
+        })}
       </ModalBody>
 
       <ModalFooter>

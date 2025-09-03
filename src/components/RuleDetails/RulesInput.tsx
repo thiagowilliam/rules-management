@@ -94,20 +94,42 @@ const RulesInput = forwardRef<RulesInputRef, InputProps>(({
   // Expor métodos para o componente pai
   useImperativeHandle(ref, () => ({
     getValue: () => {
+      let value;
+      
       switch (typeField) {
         case FieldType.INPUT:
-          return inputRef.current?.value || '';
+          // Tentar diferentes propriedades do InputMask
+          value = inputRef.current?.value || inputRef.current?.getValue?.() || '';
+          console.log(`[RulesInput] INPUT getValue for ${data.name}:`, value);
+          break;
+          
         case FieldType.SELECT:
-          return timeUnitRef.current?.value || '';
+          // Tentar diferentes propriedades do Select
+          value = timeUnitRef.current?.value || timeUnitRef.current?.getValue?.() || '';
+          console.log(`[RulesInput] SELECT getValue for ${data.name}:`, value);
+          break;
+          
         case FieldType.CHECKBOX:
-          return checkboxInputRef.current?.checked || false;
+          value = checkboxInputRef.current?.checked || false;
+          console.log(`[RulesInput] CHECKBOX getValue for ${data.name}:`, value);
+          break;
+          
         case FieldType.ADDRESS:
-          return JSON.stringify(address);
+          value = JSON.stringify(address);
+          console.log(`[RulesInput] ADDRESS getValue for ${data.name}:`, value, 'array:', address);
+          break;
+          
         default:
-          return '';
+          value = '';
+          console.log(`[RulesInput] DEFAULT getValue for ${data.name}:`, value);
       }
+      
+      return value;
     },
-    getParameterName: () => data.name
+    getParameterName: () => {
+      console.log(`[RulesInput] getParameterName:`, data.name);
+      return data.name;
+    }
   }), [typeField, address, data.name]);
 
   return (
@@ -187,7 +209,7 @@ const RulesInput = forwardRef<RulesInputRef, InputProps>(({
           ref={checkboxInputRef}
           label={i18n.t(label)}
           size={16}
-          defaultChecked={false}
+          defaultChecked={Boolean(data.value)} {/* ✅ Correção: usar valor real */}
           labelColor={theme.colors.ExperianGrey700}
         />
       )}
