@@ -23,21 +23,18 @@ import {
   RemoveItem,
 } from './styles';
 
-// Interface para as props do componente
-interface RulesInputProps {
+interface InputProps {
   label: string;
   typeField: FieldType;
   placeholder: string;
   data: CustomParametersParsed;
 }
 
-// Interface para expor métodos do componente via ref
 export interface RulesInputRef {
   getValue: () => any;
   getParameterName: () => string;
 }
 
-// Opções para o select de tempo
 const TIME_UNITS: OptionProps[] = [
   { name: i18n.t('shared.seconds'), id: 'seconds' },
   { name: i18n.t('shared.minutes'), id: 'minutes' },
@@ -45,150 +42,95 @@ const TIME_UNITS: OptionProps[] = [
   { name: i18n.t('shared.days'), id: 'days' },
 ];
 
-const RulesInput = forwardRef<RulesInputRef, RulesInputProps>(({
+const RulesInput = forwardRef<RulesInputRef, InputProps>(({
   label,
   typeField,
   placeholder,
   data,
 }, ref) => {
-  // Refs para os diferentes tipos de input
   const inputRef = useRef<InputMaskRef>(null);
-  const checkboxRef = useRef<HTMLInputElement>(null);
-  const selectRef = useRef<SelectRef>(null);
+  const checkboxInputRef = useRef<HTMLInputElement>(null);
+  const timeUnitRef = useRef<SelectRef>(null);
   
-  // Estado local para o tipo ADDRESS (lista de endereços)
-  const [addressList, setAddressList] = useState<CustomParametersParsed[]>([]);
+  const [address, setAddress] = useState<CustomParametersParsed[]>(() => {
+    if (typeField === FieldType.ADDRESS && data.value) {
+      if (typeof data.value === 'string' && data.value.startsWith('[')) {
+        try {
+          return JSON.parse(data.value);
+        } catch {
+          return [];
+        }
+      }
+      return Array.isArray(data.value) ? data.value : [];
+    }
+    return [];
+  });
 
-  // Inicializar valores baseado no tipo de campo
+  const getDivider = (index: number): ReactElement => {
+    if (index === address.length && address.length === 1) {
+      return <></>;
+    }
+    return <AddressDivider />;
+  };
+
   useEffect(() => {
-    initializeFieldValue();
+    if (typeField === FieldType.INPUT && inputRef.current && data.value) {
+      inputRef.current.setValue(String(data.value));
+    }
+    
+    if (typeField === FieldType.SELECT && timeUnitRef.current && data.value) {
+      timeUnitRef.current.setValue(String(data.value));
+    }
   }, [data.value, typeField]);
 
-  // Função para inicializar valores nos campos
-  const initializeFieldValue = () => {
-    switch (typeField) {
-      case FieldType.INPUT:
-        if (inputRef.current && data.value) {
-          inputRef.current.setValue(String(data.value));
-        }
-        break;
-        
-      case FieldType.SELECT:
-        if (selectRef.current && data.value) {
-          selectRef.current.setValue(String(data.value));
-        }
-        break;
-        
-      case FieldType.ADDRESS:
-        initializeAddressList();
-        break;
-        
-      // CHECKBOX não precisa inicialização pois usa defaultChecked
-    }
+  const handleAddButton = (): void => {
+    const newAddressList = [
+      ...address,
+      { name: inputRef.current?.value || '', value: '' },
+    ];
+    setAddress(newAddressList);
   };
 
-  // Inicializar lista de endereços
-  const initializeAddressList = () => {
-    if (!data.value) {
-      setAddressList([]);
-      return;
-    }
-
-    try {
-      // Se for string JSON, fazer parse
-      if (typeof data.value === 'string' && data.value.startsWith('[')) {
-        const parsed = JSON.parse(data.value);
-        setAddressList(Array.isArray(parsed) ? parsed : []);
-      } 
-      // Se já for array, usar diretamente
-      else if (Array.isArray(data.value)) {
-        setAddressList(data.value);
-      }
-      // Caso contrário, lista vazia
-      else {
-        setAddressList([]);
-      }
-    } catch (error) {
-      console.error('Erro ao parsear endereços:', error);
-      setAddressList([]);
-    }
-  };
-
-  // Expor métodos para o componente pai via useImperativeHandle
+  // Expor métodos para o componente pai
   useImperativeHandle(ref, () => ({
     getValue: () => {
       switch (typeField) {
         case FieldType.INPUT:
           return inputRef.current?.value || '';
         case FieldType.SELECT:
-          return selectRef.current?.getValue() || '';
+          return timeUnitRef.current?.value || '';
         case FieldType.CHECKBOX:
-          return checkboxRef.current?.checked || false;
+          return checkboxInputRef.current?.checked || false;
         case FieldType.ADDRESS:
-          return JSON.stringify(addressList);
+          return JSON.stringify(address);
         default:
           return '';
       }
     },
     getParameterName: () => data.name
-  }), [typeField, addressList, data.name]);
+  }), [typeField, address, data.name]);
 
-  // Adicionar novo endereço à lista
-  const handleAddAddress = () => {
-    const inputValue = inputRef.current?.value?.trim();
-    
-    if (!inputValue) {
-      return; // Não adicionar se estiver vazio
-    }
+  return (
+    <InputContainer>
+      {typeField === FieldType.ADDRESS && (
+        <AddressInputContainer>
+          <Typography.Label light>
+            {i18n.t(label)}
+          </Typography.Label>
+          <AddressInput>
+            <InputMask
+              mask="\*"
+              ref={inputRef}
+              placeholder={i18n.t(placeholder)}
+              defaultValue={data.value}
+            />
+            <ButtonX variant="secondary" onClick={handleAddButton}>
+              {i18n.t('shared.add')}
+            </ButtonX>
+          </AddressInput>
+        </AddressInputContainer>
+      )}
 
-    const newAddress: CustomParametersParsed = {
-      name: inputValue,
-      value: inputValue, // ou algum outro valor se necessário
-    };
-
-    setAddressList(prevList => [...prevList, newAddress]);
-    
-    // Limpar o input após adicionar
-    if (inputRef.current) {
-      inputRef.current.setValue('');
-    }
-  };
-
-  // Remover endereço da lista
-  const handleRemoveAddress = (index: number) => {
-    setAddressList(prevList => prevList.filter((_, i) => i !== index));
-  };
-
-  // Renderizar divisor entre endereços
-  const renderAddressDivider = (index: number): ReactElement => {
-    // Não mostrar divisor no último item ou quando há apenas um item
-    if (index === addressList.length - 1 || addressList.length === 1) {
-      return <></>;
-    }
-    return <AddressDivider />;
-  };
-
-  // Renderizar campo do tipo ADDRESS
-  const renderAddressField = () => (
-    <>
-      {/* Input para adicionar novos endereços */}
-      <AddressInputContainer>
-        <Typography.Label light>
-          {i18n.t(label)}
-        </Typography.Label>
-        <AddressInput>
-          <InputMask
-            mask="\*"
-            ref={inputRef}
-            placeholder={i18n.t(placeholder)}
-          />
-          <ButtonX variant="secondary" onClick={handleAddAddress}>
-            {i18n.t('shared.add')}
-          </ButtonX>
-        </AddressInput>
-      </AddressInputContainer>
-
-      {/* Lista de endereços adicionados */}
       <Card>
         <AddressList>
           <Typography.Body
@@ -197,86 +139,58 @@ const RulesInput = forwardRef<RulesInputRef, RulesInputProps>(({
           >
             {i18n.t(label)}
           </Typography.Body>
-          
-          {addressList.map((item, index) => (
-            <React.Fragment key={`${item.name}-${index}`}>
-              <Address>
+          {address.map((item, index) => (
+            <>
+              <Address key={`${item.name}-${index}`}>
                 <p>{item.name}</p>
-                <RemoveItem onClick={() => handleRemoveAddress(index)}>
-                  {i18n.t('shared.remove')}
-                </RemoveItem>
+                <RemoveItem>{i18n.t('shared.remove')}</RemoveItem>
               </Address>
-              {renderAddressDivider(index)}
-            </React.Fragment>
+              {getDivider(index)}
+            </>
           ))}
         </AddressList>
       </Card>
-    </>
-  );
 
-  // Renderizar campo do tipo INPUT
-  const renderInputField = () => (
-    <>
-      <Typography.Label style={{ marginBottom: theme.spacings.s }} light>
-        {i18n.t(label)}
-      </Typography.Label>
-      <InputMask
-        mask="\*"
-        ref={inputRef}
-        placeholder={i18n.t(placeholder)}
-        defaultValue={data.value || ''}
-      />
-    </>
-  );
+      {typeField === FieldType.INPUT && (
+        <>
+          <Typography.Label style={{ marginBottom: theme.spacings.s }} light>
+            {i18n.t(label)}
+          </Typography.Label>
+          <InputMask
+            mask="\*"
+            ref={inputRef}
+            placeholder={i18n.t(placeholder)}
+            defaultValue={data.value}
+          />
+        </>
+      )}
 
-  // Renderizar campo do tipo SELECT
-  const renderSelectField = () => (
-    <>
-      <Typography.Label style={{ marginBottom: theme.spacings.s }} light>
-        {i18n.t(label)}
-      </Typography.Label>
-      <Select
-        tagRender={tagRender}
-        defaultValue={data.value}
-        name="select-time-unit"
-        values={TIME_UNITS}
-        ref={selectRef}
-        nameAsValue
-        placeholder={i18n.t(label)}
-      />
-    </>
-  );
+      {typeField === FieldType.SELECT && (
+        <>
+          <Typography.Label style={{ marginBottom: theme.spacings.s }} light>
+            {i18n.t(label)}
+          </Typography.Label>
+          <Select
+            tagRender={tagRender}
+            defaultValue={data.value}
+            name="select-time-unit"
+            values={TIME_UNITS}
+            ref={timeUnitRef}
+            nameAsValue
+            placeholder={i18n.t(label)}
+          />
+        </>
+      )}
 
-  // Renderizar campo do tipo CHECKBOX
-  const renderCheckboxField = () => (
-    <Checkbox
-      ref={checkboxRef}
-      label={i18n.t(label)}
-      size={16}
-      defaultChecked={Boolean(data.value)}
-      labelColor={theme.colors.ExperianGrey700}
-    />
-  );
-
-  // Renderizar campo baseado no tipo
-  const renderField = () => {
-    switch (typeField) {
-      case FieldType.ADDRESS:
-        return renderAddressField();
-      case FieldType.INPUT:
-        return renderInputField();
-      case FieldType.SELECT:
-        return renderSelectField();
-      case FieldType.CHECKBOX:
-        return renderCheckboxField();
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <InputContainer>
-      {renderField()}
+      {typeField === FieldType.CHECKBOX && (
+        <Checkbox
+          ref={checkboxInputRef}
+          label={i18n.t(label)}
+          size={16}
+          defaultChecked={false}
+          labelColor={theme.colors.ExperianGrey700}
+        />
+      )}
     </InputContainer>
   );
 });
