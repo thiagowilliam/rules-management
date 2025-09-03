@@ -1,30 +1,68 @@
-// components/Rules.tsx
 import React, { useMemo } from 'react';
-import { useRules } from '../services/Rules/useRules';
-import { useRulesManager } from '../hooks/useRulesManager';
-import RulesDetails from './RulesDetails';
 
-const Rules: React.FC = () => {
-  const { data: rulesResponse, isLoading, error } = useRules();
-  
-  const rulesManager = useRulesManager({
-    initialData: rulesResponse,
-    queryKey: ['rules']
-  });
+import { Tabs, TabsProps } from 'src/components/dls/Tabs';
+import ButtonX from 'src/components/dls/ButtonX';
+import Subheader from 'src/components/dls/Subheader';
+import { useRulesLogic } from 'src/components/modules/Contextual/Rules/hooks/useRulesLogic';
+import { useRulesManager } from 'src/components/modules/Contextual/Rules/hooks/useRulesManager';
+import { useRules } from '../../../services/Rules/useRules';
+import { i18n } from 'src/i18n';
+import { 
+  Rule,
+  IRulesDto 
+} from 'src/modules/Contextual/services/Rules/dtos/Rules.dto';
+import RulesList from './RulesList';
+import {
+  Card,
+  Container,
+  ModulesContainer,
+  Title,
+  ContainerIntegrations,
+  ContainerButton,
+} from './styles';
+
+interface CustomParameter {
+  key: string;
+  ruleId: string; 
+  updates: object;
+}
+
+interface RulesProps {
+  initialData: IRulesDto[] | undefined;
+  queryKey: string[];
+}
+
+const Rules: React.FC<RulesProps> = ({ initialData, queryKey }) => {
+  // Inicializar o rulesManager
+  const rulesManager = useRulesManager({ initialData, queryKey });
 
   const {
-    selectedIntegrationId,
+    normalRules,
+    premiumRules, 
+    customRules,
     selectedRuleId,
     selectedRule,
-    premiumRules,
-    normalRules,
-    customRules,
-    selectedIntegration,
-    handleRuleSelect,
-    handleItemSelect,
-    hasCustomRules,
-    handleRuleSelect: handleRuleSelectCallback
-  } = useRulesLogic({ rulesResponse: { data: rulesManager.rules } });
+    onRuleSelect,
+    selectedIntegrationId,
+  } = useRulesLogic({ rulesResponse: rulesManager.rules });
+
+  const integrationButtons = useMemo(
+    () => {
+      return rulesManager.rules?.map(item => (
+        <ButtonX
+          key={`${item.id}`}
+          type="select-rule"
+          onClick={() => {/* handleItemSelect logic */}}
+          className={selectedIntegrationId === item.id ? 'selected' : ''}
+        >
+          {item.name}
+        </ButtonX>
+      ));
+    },
+    [rulesManager.rules, selectedIntegrationId]
+  );
+
+  const hasCustomRules = customRules.length > 0;
 
   const tabItemsConditional: TabsProps['items'] = useMemo(() => {
     const tabs = [
@@ -35,11 +73,13 @@ const Rules: React.FC = () => {
           <RulesList
             rules={normalRules}
             premiumRules={premiumRules}
+            customRules={customRules}
             totalRules={normalRules.length + premiumRules.length}
-            customRules={[]}
             selectedRuleId={selectedRuleId}
             selectedRule={selectedRule}
-            onRuleSelect={handleRuleSelect}
+            onRuleSelect={onRuleSelect}
+            rulesManager={rulesManager} // ✅ Passando rulesManager
+            selectedIntegrationId={selectedIntegrationId}
           />
         ),
       },
@@ -53,11 +93,13 @@ const Rules: React.FC = () => {
           <RulesList
             rules={[]}
             premiumRules={[]}
-            totalRules={customRules.length}
             customRules={customRules}
+            totalRules={customRules.length}
             selectedRuleId={selectedRuleId}
             selectedRule={selectedRule}
-            onRuleSelect={handleRuleSelectCallback}
+            onRuleSelect={onRuleSelect}
+            rulesManager={rulesManager} // ✅ Passando rulesManager
+            selectedIntegrationId={selectedIntegrationId}
           />
         ),
       });
@@ -68,76 +110,42 @@ const Rules: React.FC = () => {
     normalRules,
     premiumRules,
     customRules,
+    hasCustomRules,
     selectedRuleId,
     selectedRule,
-    handleRuleSelect,
-    handleRuleSelectCallback,
-    hasCustomRules
+    onRuleSelect,
+    rulesManager,
+    selectedIntegrationId,
   ]);
 
-  if (isLoading) {
-    return <div>Carregando...</div>;
-  }
-
-  if (error) {
-    return <div>Erro ao carregar regras</div>;
-  }
-
   return (
-    <Container>
-      <Subheader title={i18n.t('shared.rules')} />
+    <>
+      <Container>
+        <ModulesContainer>
+          <Card title={i18n.t('shared.integrations')}>
+            <ContainerIntegrations>
+              {integrationButtons}
+            </ContainerIntegrations>
+          </Card>
+        </ModulesContainer>
+      </Container>
 
-      <ModulesContainer>
-        <Card title={i18n.t('shared.integrations')}>
-          <Title>{i18n.t('shared.integrations')}</Title>
-          <ContainerIntegrations>
-            {/* Aqui renderiza os botões de integração */}
-          </ContainerIntegrations>
-        </Card>
-
-        <Card>
-          <Title>{i18n.t('shared.rulesList')}</Title>
+      <Container>
+        <Card title={i18n.t('shared.rulesList')}>
           <Tabs
             defaultActiveKey="regularRules"
             items={tabItemsConditional}
             className="rulesTabs"
           />
         </Card>
+      </Container>
 
-        {/* Passa o rulesManager para o RulesDetails */}
-        {selectedRule && (
-          <RulesDetails 
-            rule={selectedRule} 
-            rulesManager={rulesManager}
-            selectedIntegrationId={selectedIntegrationId}
-          />
-        )}
-      </ModulesContainer>
-
-      {/* Botões para salvar/descartar alterações */}
-      {rulesManager.hasLocalChanges && (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: '20px', 
-          right: '20px', 
-          display: 'flex', 
-          gap: '10px' 
-        }}>
-          <button 
-            onClick={rulesManager.discardChanges}
-            disabled={rulesManager.isLoading}
-          >
-            Descartar Alterações
-          </button>
-          <button 
-            onClick={rulesManager.saveChanges}
-            disabled={rulesManager.isLoading}
-          >
-            {rulesManager.isLoading ? 'Salvando...' : 'Salvar Alterações'}
-          </button>
-        </div>
-      )}
-    </Container>
+      <Container>
+        <ContainerButton>
+          <ButtonX>{i18n.t('shared.saveChanges')}</ButtonX>
+        </ContainerButton>
+      </Container>
+    </>
   );
 };
 

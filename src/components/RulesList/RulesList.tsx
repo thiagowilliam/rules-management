@@ -1,16 +1,14 @@
 import React from 'react';
-import { IRulesDto, Rule } from 'src/modules/Contextual/services/Rules/dtos/Rules.dto';
-import RulesDetails from '../RulesDetails';
-import { RulesSection } from './RulesSection';
-import {
-  RulesContainer,
-  RuleListContainer,
-  TotalRulesNumber,
-} from './styles';
 
-// Interface que recebe tudo do hook - sem duplicar lógica
+import { i18n } from 'src/i18n';
+import { Rule } from 'src/modules/Contextual/services/Rules/dtos/Rules.dto';
+
+import RulesDetails from '../RulesDetails';
+import { RulesSection } from '../RulesSection';
+import { RulesContainer, RulesListContainer, TotalRulesNumber } from './styles';
+
+// Interface que recebe tudo do hook useRulesLogic - sem duplicar lógica
 interface RulesListProps {
-  selectedIntegration: IRulesDto | undefined;
   rules: Rule[];
   premiumRules: Rule[];
   customRules: Rule[];
@@ -18,26 +16,39 @@ interface RulesListProps {
   selectedRuleId: string | null;
   selectedRule: Rule | undefined;
   onRuleSelect: (ruleId: string) => void;
+  rulesManager: ReturnType<typeof import('../../hooks/useRulesManager').useRulesManager>;
+  selectedIntegrationId: string;
 }
 
-const RulesList: React.FC<RulesListProps> = ({ 
-  selectedIntegration,
+const RulesList: React.FC<RulesListProps> = ({
   rules,
   premiumRules,
   customRules,
   totalRules,
   selectedRuleId,
   selectedRule,
-  onRuleSelect
+  onRuleSelect,
+  rulesManager,
+  selectedIntegrationId,
 }) => {
   return (
     <RulesContainer>
-      <RuleListContainer>
-        <TotalRulesNumber>{totalRules} Regras ativadas</TotalRulesNumber>
+      <RulesListContainer>
+        <TotalRulesNumber>
+          {totalRules === 1 ? (
+            <>
+              {totalRules} {i18n.t('shared.ruleActivated')}
+            </>
+          ) : (
+            <>
+              {totalRules} {i18n.t('shared.rulesActivated')}
+            </>
+          )}
+        </TotalRulesNumber>
 
         {premiumRules.length > 0 && (
           <RulesSection
-            title="Regras Premium"
+            title={i18n.t('shared.premiumRules')}
             rules={premiumRules}
             selectedRuleId={selectedRuleId}
             onRuleSelect={onRuleSelect}
@@ -46,7 +57,7 @@ const RulesList: React.FC<RulesListProps> = ({
 
         {rules.length > 0 && (
           <RulesSection
-            title="Regras Padrão" 
+            title={i18n.t('shared.defaultRules')}
             rules={rules}
             selectedRuleId={selectedRuleId}
             onRuleSelect={onRuleSelect}
@@ -55,15 +66,21 @@ const RulesList: React.FC<RulesListProps> = ({
 
         {customRules.length > 0 && (
           <RulesSection
-            title="Customizadas"
+            title={i18n.t('shared.customized')}
             rules={customRules}
             selectedRuleId={selectedRuleId}
             onRuleSelect={onRuleSelect}
           />
         )}
-      </RuleListContainer>
+      </RulesListContainer>
 
-      {selectedRule && <RulesDetails selectedRule={selectedRule} />}
+      {selectedRule && (
+        <RulesDetails
+          selectedRule={selectedRule}
+          rulesManager={rulesManager}
+          selectedIntegrationId={selectedIntegrationId}
+        />
+      )}
     </RulesContainer>
   );
 };
