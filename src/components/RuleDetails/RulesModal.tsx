@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+/* eslint-disable @typescript-eslint/eslint/explicit-function-return-type */
+import React, { useRef, useMemo } from 'react';
+
 import ButtonX from 'src/components/dls/ButtonX';
-import Card from 'src/components/dls/Card';
 import { ModalBody, ModalFooter, ModalHeader } from 'src/components/dls/Modal';
 import Typography from 'src/components/dls/Typography';
 import { i18n } from 'src/i18n';
@@ -10,10 +11,11 @@ import {
 } from 'src/modules/Contextual/services/Rules/dtos/Rules.dto';
 import { RulesList } from 'src/modules/Contextual/utils/rules';
 
-import RulesInfoBox from './RulesInfoBox';
-import RulesInput, { RulesInputRef } from './RulesInput';
+import RulesInfoBox from '../RulesInfoBox';
+import RulesInput, { RulesInputRef } from '../RulesInput';
 import {
   ContainerFilterRow,
+  ContainerInputs,
   Counter,
   InputWrapper,
   ParametersTitle,
@@ -21,10 +23,11 @@ import {
 
 interface RulesModalProps {
   rule: Rule;
-  parameter: CustomParametersParsed[];
   ruleIndex: number;
-  rulesManager: ReturnType<typeof import('../hooks/useRulesManager').useRulesManager>;
-  selectedIntegrationId: string;
+  parameter: CustomParametersParsed[];
+  rulesManager: ReturnType<
+    typeof import('../hooks/useRulesManager').useRulesManager
+  >;
   onCloseModal: () => void;
 }
 
@@ -33,138 +36,96 @@ const RulesModal: React.FC<RulesModalProps> = ({
   parameter,
   ruleIndex,
   rulesManager,
-  selectedIntegrationId,
   onCloseModal,
 }) => {
-  // Refs para capturar os valores de cada RulesInput
   const inputRefs = useRef<Record<string, RulesInputRef>>({});
 
   const handleSave = () => {
     try {
-      console.log('[RulesModal] Iniciando salvamento...');
-      
-      // Objeto para armazenar os parâmetros atualizados
       const updatedParameters: Record<string, any> = {};
-      
-      // Debug: Verificar se temos parâmetros
-      console.log('[RulesModal] Parameters:', parameter);
-      console.log('[RulesModal] inputRefs.current:', inputRefs.current);
-      
-      // Percorrer todos os parâmetros e coletar seus valores
-      parameter.forEach((param, index) => {
+
+      parameter.forEach(param => {
         const inputRef = inputRefs.current[param.name];
-        
-        console.log(`[RulesModal] Param ${index}:`, param.name, 'Ref:', inputRef);
         
         if (inputRef) {
           const value = inputRef.getValue();
           const paramName = inputRef.getParameterName();
           
-          console.log(`[RulesModal] Valor coletado para ${paramName}:`, value);
-          
           updatedParameters[paramName] = value;
         } else {
-          console.warn(`[RulesModal] Ref NÃO encontrado para ${param.name}`);
-          
-          // FALLBACK: Se ref não existe, tenta usar valor padrão do param
-          if (param.value !== undefined) {
-            updatedParameters[param.name] = param.value;
-            console.log(`[RulesModal] Usando valor padrão para ${param.name}:`, param.value);
-          }
+          console.warn('[RulesModal] Ref não encontrado para:', param.name);
+        }
+        
+        if (param.value === undefined) {
+          updatedParameters[param.name] = param.value;
         }
       });
-      
-      console.log('[RulesModal] updatedParameters final:', updatedParameters);
-      
-      // Verificar se temos dados para salvar
+
       const hasData = Object.keys(updatedParameters).length > 0;
-      
+
       if (!hasData) {
-        console.warn('[RulesModal] Nenhum parâmetro coletado! Cancelando salvamento.');
-        // Opcional: Mostrar toast/alerta para o usuário
+        console.warn(
+          '[RulesModal] Nenhum parâmetro coletado! Cancelando salvamento.'
+        );
         return;
       }
-      
-      // Converter para formato ARRAY (formato esperado pelos customParameters)
-const parametersArray = Object.entries(updatedParameters).map(([name, value]) => ({
-  name,
-  value: String(value) // Garantir que seja string
-}));
 
-// Se não há parâmetros, salvar array vazio (não objeto vazio)
-const customParametersJson = JSON.stringify(parametersArray.length > 0 ? parametersArray : []);
-console.log('[RulesModal] Array a ser salvo:', parametersArray);
-console.log('[RulesModal] JSON final:', customParametersJson);
-      
-      // Salvar usando o rulesManager
+      const parametersArray = Object.entries(updatedParameters).map(
+        ([name, value]) => ({
+          name,
+          value: String(value), // Garantir que seja string
+        })
+      );
+
+      const customParametersJson = JSON.stringify(
+        parametersArray.length > 0 ? parametersArray : []
+      );
+
       rulesManager.updateRuleParameters(rule.ruleId, customParametersJson);
-      
-      console.log('[RulesModal] Parâmetros salvos com sucesso!');
-      
-      // Fechar o modal
+
       onCloseModal();
     } catch (error) {
       console.error('[RulesModal] Erro ao salvar parâmetros:', error);
-      // Opcional: Mostrar toast/alerta de erro para o usuário
     }
-  };
-  
-  // Função para debug - adicionar temporariamente
-  const debugInputs = () => {
-    console.log('=== DEBUG INPUTS ===');
-    parameter.forEach(param => {
-      const ref = inputRefs.current[param.name];
-      console.log(`Param: ${param.name}`);
-      console.log(`Ref existe:`, !!ref);
-      if (ref) {
-        console.log(`getValue():`, ref.getValue?.());
-        console.log(`getParameterName():`, ref.getParameterName?.());
-      }
-      console.log('---');
-    });
   };
 
   const handleClose = () => {
-    console.log('[RulesModal] Modal fechado sem salvar');
     onCloseModal();
   };
+
+  // Solução 3: Usando useMemo para organizar parâmetros com checkbox no final
+  const sortedParameters = useMemo(() => {
+    return [
+      ...parameter.filter(item => RulesList[item.name]?.fieldType !== 'checkbox'),
+      ...parameter.filter(item => RulesList[item.name]?.fieldType === 'checkbox')
+    ];
+  }, [parameter]);
 
   return (
     <>
       <ModalHeader>
         <span>{i18n.t('shared.editParameters')}</span>
       </ModalHeader>
-
       <ModalBody>
-        {/* Informações da regra */}
-        <RulesInfoBox 
-          key={`${rule.name}`} 
-          index={ruleIndex} 
-          rule={rule} 
-        />
+        <RulesInfoBox key={`${rule.name}-${ruleIndex}`} rule={rule} />
 
-        {/* Título dos parâmetros */}
         <ParametersTitle>
           <Typography.Body size="md">
             {i18n.t('shared.parameters')}
           </Typography.Body>
         </ParametersTitle>
 
-        {/* Lista de parâmetros editáveis */}
-        {parameter.map((item, index) => {
-          console.log(`[RulesModal] Renderizando input para: ${item.name}`, item);
-          
-          return (
-            <Card key={`${item.name}-${index}`}>
-              <InputWrapper>
+        <ContainerInputs>
+          {/* Lista de parâmetros editáveis */}
+          {sortedParameters.map((item, index) => {
+            return (
+              <InputWrapper key={`${item.name}-${index}`}>
                 <Counter>{index + 1}</Counter>
                 <RulesInput
-                  ref={(el) => {
+                  ref={el => {
                     if (el) {
-                      console.log(`[RulesModal] Ref definido para: ${item.name}`);
                       inputRefs.current[item.name] = el;
                     } else {
-                      console.log(`[RulesModal] Ref REMOVIDO para: ${item.name}`);
                       delete inputRefs.current[item.name];
                     }
                   }}
@@ -174,25 +135,20 @@ console.log('[RulesModal] JSON final:', customParametersJson);
                   data={item}
                 />
               </InputWrapper>
-            </Card>
-          );
-        })}
+            );
+          })}
+        </ContainerInputs>
       </ModalBody>
 
       <ModalFooter>
         <ContainerFilterRow>
-          <ButtonX 
-            variant="secondary" 
-            onClick={handleClose}
-          >
+          <ButtonX variant="secondary" onClick={handleClose}>
             {i18n.t('shared.close')}
           </ButtonX>
-          <ButtonX 
-            onClick={handleSave}
-          >
-            {i18n.t('shared.save')}
-          </ButtonX>
         </ContainerFilterRow>
+        <ButtonX onClick={handleSave}>
+          {i18n.t('shared.save')}
+        </ButtonX>
       </ModalFooter>
     </>
   );
